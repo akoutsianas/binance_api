@@ -57,6 +57,7 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 | 008.v4data_try_02 | Same, 20.8 d / 13 test days (3× data) | **Gate FAILED** — but regression IC now +ve & daily-significant to h8 (t +2.1..+3.9): first real schema-5 signal. Killed by adverse selection + **2-of-4-fold regime concentration** |
 | 009 | Triple-barrier **first-touch** labels | **NULL** — gate byte-identical to try_02; labels flip <1% (only at h8). Adverse selection is fill-mechanics, not a label artifact |
 | 010 | **5-second bars** (run.009 at 5s, wall-clock identical) | **Design PASS / gate FAIL** — 30s daily-IC t +4.07>3.87, 90s +3.35>2.10, fold-concentration far better (42%/68% vs 97%) ⇒ **promote w5**; gate still fails via same adverse selection, economics unmoved by finer bars |
+| 010a | run.010 re-executed on the **35-day tar** (32.7 d, 4 folds × 4.7 d test) | **Gate FAILED, but two pre-registered questions answered:** regime concern recedes (IC +ve all 4 folds, trigger share ≤55%), and **Cell 10D fired the router branch** (up18 FAVOURABLE OOF AUC 0.610 ≥ 0.58). Still not the ≥45-day verdict (folds <7 d) |
 
 ## Cross-cutting findings
 
@@ -112,6 +113,13 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 
 ## Current state & the one remaining lever
 
+*(Updated 2026-08-15 by run.010a — see its section. The fill-timing
+tiebreaker fired early: up18 FAVOURABLE OOF AUC 0.610 ≥ 0.58 ⇒ the next
+lever is a **maker/skip router on current features**, not sub-second data.
+Regime concern receded: IC +ve in all 4 folds, trigger share ≤55%. Gate
+still failed; ≥45-day run ~Aug 28 remains the economic verdict, now with a
+gated router sim. Do NOT re-run run.009 on more data — run.010a is that run
+on the already-promoted w5 cadence.)*
 - Signal quality has genuinely improved on schema-5 data (try_02: directional IC
   significant out to the trading horizon for the first time) — best evidence yet
   that volume + v3 features help.
@@ -241,7 +249,74 @@ same logic as the gate. Per the pre-registered read-out, ~0.50 points to **data
 resolution (sub-second order-flow)** as the remaining lever, not cleverer use of
 the current features — but hold that trigger for the 45-day re-run (below).
 
-## Operational notes
+## run.010a — executed 2026-08-15 (run.010 on the 35-day tar: interim power check)
+
+Notebook `runs/btc_lstm.run.010a.ipynb` = run.010 **unchanged**, re-executed on
+`35day_btc_data.tar.gz`: 196 w5 files, 564,480 rows → 513,447 valid samples,
+32.7 days (2026-07-14 → 08-15), schema-5 100%, 29/29 v3 features, cadence
+clean (64 tiny breaks). Sanity anchor holds (lup_18 0.43% / ldn_18 0.36% ≈
+run.009's 0.45%/0.43%). Four expanding folds, but each test window is only
+**4.7–4.8 d (<7 d → self-flagged "indicative only")** — this is an interim
+checkpoint, NOT the ≥45-day economic verdict.
+
+**Signal — strongest yet, regime concern recedes.**
+- Daily-IC t (20 test days): h6 **+7.75**, h9 +6.74, h12 +5.97, h15 +5.40,
+  h18 **+4.66**, h24 +4.01 — vs run.010's +4.07/+3.35 (12 d) and run.009's
+  +3.87/+2.10. Pooled IC h6 +0.0976 / h18 +0.0496 (run.010: +0.0746/+0.0383).
+- **IC positive in all 4 folds** (h6: +0.045/+0.134/+0.081/+0.155; fold 0
+  weakest) — the try_02 "2-of-4 folds" pattern is gone at 33 days.
+- Trigger fold-concentration healthy: up18 max share 49%, dn18 55%
+  (run.009: 97%).
+
+**Gate — FAILED, same wall.** up18 maker −9.62 bps CI [−12.20, −6.77], dn18
+−10.96 [−14.18, −7.96]; taker −10.46/−12.07; CIs entirely <0. Adverse
+selection unchanged: fill 76–82%, hit_f 4.4% vs hit_m 18.0% (up18 @0.1%).
+Per-fold sim 0/4 up, 1/4 dn (fold 2 +0.89 on n=31 — noise). Seed-unanimity
+is the least-bad variant (up18 maker −6.36 [−10.11, −5.70], hit 13.2%) but
+still negative. δ/wait grids, the 30s hybrid, and entry-delay stress all stay
+negative — no execution-plumbing lever moved.
+- Asymmetry worth noting: fold 3 (newest) has the *highest* regression IC
+  (h18 +0.085) but a near-zero opportunity-head hit rate (0.4%) — head
+  calibration decays faster than the ranking signal; supports the planned
+  trailing-IC meta-filter study on the saved `run010_scores.npz`.
+
+**Cell 10D fill-split — the pre-registered tiebreaker FIRED.**
+- up18: FILLED OOF AUC 0.555 (weak); **FAVOURABLE OOF AUC = 0.610 ≥ 0.58 →
+  SIGNAL branch** ("build a maker/skip router on the current features, no new
+  data needed"). Top single features: `vol_norm` 0.652, `book_imbal_roll8/4`
+  0.62, `dow_sin/cos` ~0.59 (regime proxies — router must be re-validated
+  per-fold on the 45-day set).
+- dn18: FAVOURABLE AUC still **nan** — day-folds with zero rare positives;
+  the pooled-`cross_val_predict` patch did not resolve it (544 triggers ×
+  13.1% favourable ≈ 71 positives over 20 days). Fix before the 45-day run:
+  pooled OOF predictions, or report the up-side only and treat dn as taker.
+
+**Verdict:** the two questions the 45-day run was to answer are half-answered
+early: (regime) the edge is no longer two lucky folds; (fill-timing) an
+executable fill-timing signal *does* exist in the current features — on the
+up side. Economics unchanged: every sim −6…−14 bps. The ≥45-day run (~Aug
+28) remains the tradable verdict and now carries a third item: a gated
+router sim.
+
+**Next actions (priority order):**
+1. **Build the maker/skip router** (pre-registered branch fired) →
+   **implemented in `runs/btc_lstm.run.011.ipynb`** (2026-08-15, unexecuted):
+   causal walk-forward router, τ frozen from val EV, starvation abstention,
+   gated A/B/C. Day-grouped CV model on P(favourable | trigger features);
+   posts the limit only when router score > τ.
+2. ~~Fix Cell 10D dn-side nan~~ → done in run.011 (pooled OOF via manual
+   GroupKFold splits + one AUC over pooled held-out probabilities).
+3. Keep collecting; **≥45-day run ~Aug 28 on w5, unchanged** except items
+   1–2. Do not re-run run.009 on more data — w5 is promoted, run.010a *is*
+   the "more data" run on the better cadence; a 33-day w15 re-run would only
+   be a cadence ablation, and the daily-IC gap (5s ≫ 15s on identical
+   windows) already answers it.
+4. Honest expectation-setting: hit_f must go ~4% → ~49%+ for maker
+   breakeven; a 0.61-AUC filter will not close that alone. If the router
+   fails its sim gate on the 45-day set, the fallback per the pre-registered
+   read-out is **sub-second order-flow collection**.
+
+
 
 - Build the tar with `tar cJf btc_data.tar.xz out*.csv.gz`; verify schema-3/4
   presence with `tar tf … | grep -c '^out[34]'` (the old `out.*` glob missed
