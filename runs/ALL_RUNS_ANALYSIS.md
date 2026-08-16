@@ -58,6 +58,7 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 | 009 | Triple-barrier **first-touch** labels | **NULL** — gate byte-identical to try_02; labels flip <1% (only at h8). Adverse selection is fill-mechanics, not a label artifact |
 | 010 | **5-second bars** (run.009 at 5s, wall-clock identical) | **Design PASS / gate FAIL** — 30s daily-IC t +4.07>3.87, 90s +3.35>2.10, fold-concentration far better (42%/68% vs 97%) ⇒ **promote w5**; gate still fails via same adverse selection, economics unmoved by finer bars |
 | 010a | run.010 re-executed on the **35-day tar** (32.7 d, 4 folds × 4.7 d test) | **Gate FAILED, but two pre-registered questions answered:** regime concern recedes (IC +ve all 4 folds, trigger share ≤55%), and **Cell 10D fired the router branch** (up18 FAVOURABLE OOF AUC 0.610 ≥ 0.58). Still not the ≥45-day verdict (folds <7 d) |
+| 011 | causal **maker/skip router** (cell 10R) on the 10D branch, fully gated, no-bias contract | **Gate FAILED (vacuous)** — val found no profitable τ (best EV/trig +0.00 bps) → router routed 0/2,091 triggers (0% coverage). **The 0.610 signal did not reproduce** (now 0.518) and flipped to dn18 0.613 carried by regime/time proxies, not microstructure |
 
 ## Cross-cutting findings
 
@@ -113,13 +114,17 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 
 ## Current state & the one remaining lever
 
-*(Updated 2026-08-15 by run.010a — see its section. The fill-timing
-tiebreaker fired early: up18 FAVOURABLE OOF AUC 0.610 ≥ 0.58 ⇒ the next
-lever is a **maker/skip router on current features**, not sub-second data.
-Regime concern receded: IC +ve in all 4 folds, trigger share ≤55%. Gate
-still failed; ≥45-day run ~Aug 28 remains the economic verdict, now with a
-gated router sim. Do NOT re-run run.009 on more data — run.010a is that run
-on the already-promoted w5 cadence.)*
+*(Updated 2026-08-16 by run.011 — see its section. The maker/skip router
+was built and gated, and it failed vacuously: val found no profitable τ, so
+it routed nothing. Worse, the fill-timing signal that fired the router
+branch did not reproduce — up18 FAVOURABLE OOF AUC 0.610 → 0.518 (chance)
+once the dn-side nan fix was applied, and the surviving signal (dn18 0.613)
+is carried by regime/time proxies, not microstructure. This weakens the
+"current features are enough" hypothesis and tilts the 45-day tiebreaker
+toward sub-second order-flow. Regime concern stays receded: IC +ve in all 4
+folds, trigger share ≤55%. ≥45-day run ~Aug 28 remains the economic verdict,
+reusing cell 10R unchanged. Do NOT re-run run.009 on more data — run.010a is
+that run on the already-promoted w5 cadence.)*
 - Signal quality has genuinely improved on schema-5 data (try_02: directional IC
   significant out to the trading horizon for the first time) — best evidence yet
   that volume + v3 features help.
@@ -315,6 +320,52 @@ router sim.
    breakeven; a 0.61-AUC filter will not close that alone. If the router
    fails its sim gate on the 45-day set, the fallback per the pre-registered
    read-out is **sub-second order-flow collection**.
+
+## run.011 — executed 2026-08-16 (the causal maker/skip router: built, gated, vacuous fail)
+
+Notebook `runs/btc_lstm.run.011.ipynb` = run.010a **unchanged** (same window,
+features, folds, model, loop, triggers, sims) with two additions: **cell 10R**
+(causal maker/skip router, the gated object) and the **cell-10D pooling fix**
+(pooled OOF predictions so dn18 resolves; run.010a returned `nan`). One
+variable per run. No-bias contract (cell 0): walk-forward training only, τ
+picked on val EV then frozen, scaler refit per step, 1% training triggers /
+0.1% application, starvation abstention.
+
+**Result — GATE FAILED (vacuous).** The val-EV search over 148 (up) / 555 (dn)
+routable val triggers found no profitable threshold — best EV/trig literally
++0.00 bps — so τ froze at 1.01 and the router routed **0 of 2,091** primary
+triggers (0% coverage, 10–11 abstain-days). A/B/C all fail by construction.
+This is the pre-registered "vacuous fail, not a tuned pass": the router did
+exactly what it should when val shows nothing, at 33 days.
+
+**The deeper result — the fill-timing signal did not reproduce.** Cell 10D
+pooled OOF:
+
+| side | FILLED AUC | FAVOURABLE AUC |
+|------|------------|----------------|
+| up18 (run.010a: 0.610) | 0.525 | **0.518 → chance** |
+| dn18 (was nan) | 0.511 | **0.613 → signal** |
+
+The up18 0.610 that fired the router branch was partly an averaging artifact
+over degenerate day-folds; the honest pooled re-estimate erases it. What
+survives is dn18, carried by regime/time proxies (`vol_ratio_1h_24h` 0.809,
+`lsr_z` 0.792, `ret_norm_4h` 0.774, `ma_gap_24h` 0.763, `minute_cos` 0.745;
+up-side `dow_sin/cos`, `book_imbal_roll8/4`) — day-of-week/minute-of-day
+features dominating is the profile that dies under walk-forward, and it did.
+
+**Signal unchanged** (reproducibility, same data): daily-IC t h6 +7.75 / h18
++4.66, all horizons significant, IC positive 4/4 folds. **Economics unchanged**:
+every sim negative, adverse selection intact (up18 maker −9.62 bps CI
+[−12.20, −6.77], hit_f 4.4% vs hit_m 18.0%). Fold-3 calibration-decay
+asymmetry persists (highest IC, near-zero hit).
+
+**Verdict:** three candidate explanations, in order — (1) **starvation** at 33
+days (148/555 val triggers is weak evidence); (2) the 0.61-AUC router genuinely
+cannot separate fills causally → sub-second order-flow; (3, new) the router's
+**premise is now shaky** — the signal that fired it did not reproduce and what
+remains is regime noise. All three resolve in the same single experiment: the
+≥45-day run (~Aug 28) reusing cell 10R unchanged. Expectation tilts toward
+sub-second order-flow, not the router. Full numbers in `runs/run011.analysis.md`.
 
 
 
